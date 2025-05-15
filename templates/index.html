@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicinal Plant Identifier</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Medicinal Plant Identifier</h1>
+            <p>Upload a plant image to identify the medicinal plant</p>
+        </header>
+
+        <main>
+            {% if not model_loaded %}
+                <div class="error-message">
+                    <p>Model not loaded. Please make sure you have the following files:</p>
+                    <ul>
+                        <li>plant_model.h5</li>
+                        <li>plant_classes.txt</li>
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="upload-section">
+                <div class="image-preview-container">
+                    <div id="image-preview">
+                        <p>Image preview will appear here</p>
+                    </div>
+                </div>
+                
+                <div class="upload-form">
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="file-input-container">
+                            <input type="file" id="file-input" name="file" accept=".jpg, .jpeg, .png" />
+                            <label for="file-input" class="file-input-label">Choose an image</label>
+                        </div>
+                        <button type="submit" id="submit-btn" disabled>Identify Plant</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="loading" class="hidden">
+                <div class="spinner"></div>
+                <p>Analyzing image...</p>
+            </div>
+
+            <div id="results" class="hidden">
+                <h2>Identification Results</h2>
+                <div class="top-result">
+                    <h3>Identified Plant: <span id="plant-name"></span></h3>
+                    <div class="confidence-bar-container">
+                        <div id="confidence-bar"></div>
+                        <span id="confidence-text"></span>
+                    </div>
+                </div>
+                
+                <div class="other-predictions">
+                    <h3>Top 3 Predictions:</h3>
+                    <ul id="predictions-list"></ul>
+                </div>
+            </div>
+
+            <div id="error-display" class="hidden">
+                <h2>Error</h2>
+                <p id="error-message"></p>
+            </div>
+        </main>
+
+        <footer>
+            <p>Medicinal Plant CNN Classifier &copy; 2023</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html> 
