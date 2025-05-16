@@ -4,6 +4,9 @@ import numpy as np
 import os
 from werkzeug.utils import secure_filename
 import time
+from tensorflow.keras.utils import load_img
+from keras.preprocessing.image import load_img
+
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
