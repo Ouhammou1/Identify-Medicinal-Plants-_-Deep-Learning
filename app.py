@@ -5,7 +5,6 @@ import os
 from werkzeug.utils import secure_filename
 import time
 from tensorflow.keras.utils import load_img
-from keras.preprocessing.image import load_img
 
 
 app = Flask(__name__)
@@ -63,14 +62,17 @@ def load_model_and_classes():
 def predict_image(image_path):
     """Make prediction on an image"""
     if model is None or not class_names:
+        print("Error: Model or class names not loaded")
         return {"error": "Model or class names not loaded"}
     
     try:
+        print(f"Loading image from {image_path}")
         # Load and preprocess image
         img = tf.keras.utils.load_img(image_path, target_size=IMAGE_SIZE)
         img_array = tf.keras.utils.img_to_array(img)
         img_array = tf.expand_dims(img_array, 0)  # Create batch
         
+        print("Making prediction...")
         # Make prediction
         predictions = model.predict(img_array, verbose=0)
         
@@ -78,14 +80,21 @@ def predict_image(image_path):
         top_indices = np.argsort(predictions[0])[-3:][::-1]
         results = []
         
+        print(f"Top prediction index: {np.argmax(predictions[0])}")
+        print(f"Prediction confidence: {np.max(predictions[0]) * 100:.2f}%")
+        
         for i, idx in enumerate(top_indices):
+            plant_name = class_names[idx] if idx < len(class_names) else f"Unknown-{idx}"
+            confidence = float(predictions[0][idx] * 100)
+            print(f"Rank {i+1}: {plant_name} - {confidence:.2f}%")
+            
             results.append({
                 "rank": i+1,
-                "plant": class_names[idx],
-                "confidence": float(predictions[0][idx] * 100)
+                "plant": plant_name,
+                "confidence": confidence
             })
         
-        return {
+        result = {
             "success": True,
             "top_prediction": {
                 "plant": class_names[np.argmax(predictions[0])],
@@ -93,7 +102,12 @@ def predict_image(image_path):
             },
             "predictions": results
         }
+        print(f"Returning result: {result}")
+        return result
     except Exception as e:
+        print(f"Error in predict_image: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {"error": str(e)}
 
 @app.route('/')
@@ -105,24 +119,37 @@ def index():
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle image upload and prediction"""
+    print("Upload request received")
+    
     if 'file' not in request.files:
+        print("No file part in request")
         return jsonify({"error": "No file part"})
     
     file = request.files['file']
     
     if file.filename == '':
+        print("No selected file")
         return jsonify({"error": "No selected file"})
     
     if file and allowed_file(file.filename):
-        filename = secure_filename(f"{int(time.time())}_{file.filename}")
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-        
-        # Make prediction
-        result = predict_image(filepath)
-        return jsonify(result)
-    
-    return jsonify({"error": "File type not allowed"})
+        try:
+            print(f"Processing file: {file.filename}")
+            filename = secure_filename(f"{int(time.time())}_{file.filename}")
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            print(f"Saving to: {filepath}")
+            file.save(filepath)
+            
+            # Make prediction
+            result = predict_image(filepath)
+            return jsonify(result)
+        except Exception as e:
+            print(f"Error in upload_file: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": str(e)})
+    else:
+        print(f"File type not allowed: {file.filename}")
+        return jsonify({"error": "File type not allowed"})
 
 if __name__ == '__main__':
     model_loaded = load_model_and_classes()
